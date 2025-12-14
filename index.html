@@ -1,0 +1,440 @@
+<!DOCTYPE html>
+<html lang="en" class="dark">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Family United All (FUA) - Coming Soon</title>
+    
+    <!-- Fonts: Cairo for Arabic, Outfit for English -->
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Cairo:wght@400;600;800&family=Outfit:wght@300;500;700&display=swap" rel="stylesheet">
+    
+    <!-- Icons -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    
+    <!-- Tailwind CSS -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script>
+        tailwind.config = {
+            darkMode: 'class',
+            theme: {
+                extend: {
+                    colors: {
+                        ice: {
+                            50: '#f0f9ff',
+                            100: '#e0f2fe',
+                            500: '#0ea5e9',
+                            800: '#075985',
+                            900: '#0c4a6e',
+                        },
+                        fire: {
+                            500: '#f97316', // Orange for contrast/furnace glow
+                        }
+                    },
+                    fontFamily: {
+                        sans: ['Outfit', 'sans-serif'],
+                        arabic: ['Cairo', 'sans-serif'],
+                    },
+                    animation: {
+                        'pulse-slow': 'pulse 4s cubic-bezier(0.4, 0, 0.6, 1) infinite',
+                        'float': 'float 6s ease-in-out infinite',
+                    },
+                    keyframes: {
+                        float: {
+                            '0%, 100%': { transform: 'translateY(0)' },
+                            '50%': { transform: 'translateY(-10px)' },
+                        }
+                    }
+                }
+            }
+        }
+    </script>
+
+    <!-- Three.js for 3D Effects -->
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
+
+    <style>
+        /* Custom Glassmorphism Classes */
+        .glass-panel {
+            background: rgba(255, 255, 255, 0.05);
+            backdrop-filter: blur(16px);
+            -webkit-backdrop-filter: blur(16px);
+            border: 1px solid rgba(255, 255, 255, 0.1);
+            box-shadow: 0 4px 30px rgba(0, 0, 0, 0.1);
+        }
+
+        .dark .glass-panel {
+            background: rgba(0, 0, 0, 0.2);
+            border: 1px solid rgba(255, 255, 255, 0.05);
+        }
+
+        .glass-input {
+            background: rgba(255, 255, 255, 0.1);
+            border: 1px solid rgba(255, 255, 255, 0.2);
+            color: white;
+        }
+        
+        .glass-input:focus {
+            background: rgba(255, 255, 255, 0.2);
+            border-color: rgba(14, 165, 233, 0.5);
+            outline: none;
+        }
+
+        /* Gradient Text */
+        .text-gradient {
+            background: linear-gradient(to right, #38bdf8, #818cf8);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+        }
+        .dark .text-gradient {
+            background: linear-gradient(to right, #7dd3fc, #c084fc);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+        }
+
+        /* 3D Canvas Background */
+        #canvas-container {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            z-index: -1;
+            overflow: hidden;
+            background: linear-gradient(to bottom, #f0f9ff, #bae6fd); /* Light Mode Sky */
+            transition: background 0.5s ease;
+        }
+
+        .dark #canvas-container {
+            background: radial-gradient(circle at center, #0f172a 0%, #020617 100%); /* Dark Mode Deep Space/Ice */
+        }
+
+        /* Loader */
+        .loader-overlay {
+            position: fixed;
+            inset: 0;
+            background: #020617;
+            z-index: 50;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            transition: opacity 0.5s ease;
+        }
+    </style>
+</head>
+<body class="font-sans text-slate-800 dark:text-white transition-colors duration-300 overflow-x-hidden">
+
+    <!-- Loading Screen -->
+    <div id="loader" class="loader-overlay">
+        <div class="flex flex-col items-center">
+            <div class="animate-spin rounded-full h-16 w-16 border-t-2 border-b-2 border-sky-500 mb-4"></div>
+            <h2 class="text-sky-400 font-bold tracking-widest text-xl">F U A</h2>
+        </div>
+    </div>
+
+    <!-- 3D Background -->
+    <div id="canvas-container"></div>
+
+    <!-- Main Wrapper -->
+    <div class="min-h-screen flex flex-col justify-between relative z-10 p-4 md:p-8">
+        
+        <!-- Header / Navbar -->
+        <nav class="glass-panel rounded-2xl px-6 py-4 flex justify-between items-center w-full max-w-7xl mx-auto animate-float">
+            <!-- Logo Area -->
+            <div class="flex items-center gap-3">
+                <div class="w-10 h-10 rounded-lg bg-gradient-to-br from-sky-500 to-indigo-600 flex items-center justify-center text-white font-bold shadow-lg shadow-sky-500/30">
+                    <i class="fa-solid fa-shield-halved"></i>
+                </div>
+                <span class="font-bold text-xl tracking-wide hidden sm:block">FUA <span class="text-sky-500 text-sm font-normal opacity-80">Alliance</span></span>
+            </div>
+
+            <!-- Controls -->
+            <div class="flex items-center gap-4">
+                <!-- Theme Toggle -->
+                <button id="theme-toggle" class="w-10 h-10 rounded-full glass-panel flex items-center justify-center hover:bg-white/10 transition-all text-sky-600 dark:text-yellow-400">
+                    <i class="fa-solid fa-moon text-xl" id="theme-icon"></i>
+                </button>
+                <!-- Lang Toggle -->
+                <button id="lang-toggle" class="px-4 py-2 rounded-xl glass-panel text-sm font-semibold hover:bg-white/10 transition-all">
+                    العربية
+                </button>
+            </div>
+        </nav>
+
+        <!-- Main Content -->
+        <main class="flex-grow flex flex-col justify-center items-center text-center mt-8 md:mt-0 w-full max-w-4xl mx-auto">
+            
+            <div class="glass-panel p-8 md:p-12 rounded-3xl w-full relative overflow-hidden group">
+                <!-- Decorative Glow -->
+                <div class="absolute top-0 left-1/2 -translate-x-1/2 w-1/2 h-1/2 bg-sky-500/20 blur-[80px] rounded-full pointer-events-none"></div>
+
+                <div class="relative z-10">
+                    <span id="subtitle" class="uppercase tracking-[0.2em] text-sm md:text-base text-sky-600 dark:text-sky-400 font-bold mb-4 block">Whiteout Survival Alliance</span>
+                    
+                    <h1 class="text-5xl md:text-7xl font-extrabold mb-6 leading-tight">
+                        <span id="main-title-1">Family</span> 
+                        <span class="text-gradient">United</span> 
+                        <span id="main-title-2">All</span>
+                    </h1>
+                    
+                    <p id="description" class="text-lg md:text-xl text-slate-600 dark:text-slate-300 mb-10 max-w-2xl mx-auto leading-relaxed">
+                        We are gathering our strength. The furnace is heating up. Prepare for the ultimate alliance experience.
+                    </p>
+
+                    <!-- Countdown -->
+                    <div class="grid grid-cols-2 md:grid-cols-4 gap-4 mb-12 max-w-3xl mx-auto" dir="ltr">
+                        <div class="glass-panel p-4 rounded-xl">
+                            <span id="days" class="text-3xl md:text-4xl font-bold text-sky-500">00</span>
+                            <p id="label-days" class="text-xs uppercase tracking-wider opacity-70 mt-1">Days</p>
+                        </div>
+                        <div class="glass-panel p-4 rounded-xl">
+                            <span id="hours" class="text-3xl md:text-4xl font-bold text-sky-500">00</span>
+                            <p id="label-hours" class="text-xs uppercase tracking-wider opacity-70 mt-1">Hours</p>
+                        </div>
+                        <div class="glass-panel p-4 rounded-xl">
+                            <span id="minutes" class="text-3xl md:text-4xl font-bold text-sky-500">00</span>
+                            <p id="label-minutes" class="text-xs uppercase tracking-wider opacity-70 mt-1">Minutes</p>
+                        </div>
+                        <div class="glass-panel p-4 rounded-xl">
+                            <span id="seconds" class="text-3xl md:text-4xl font-bold text-sky-500">00</span>
+                            <p id="label-seconds" class="text-xs uppercase tracking-wider opacity-70 mt-1">Seconds</p>
+                        </div>
+                    </div>
+
+                    <!-- CTA / Newsletter -->
+                    <div class="flex flex-col md:flex-row gap-3 max-w-lg mx-auto w-full">
+                        <input type="email" id="email-placeholder" placeholder="Enter your email for updates" class="glass-input w-full px-5 py-3 rounded-xl placeholder-slate-500 dark:placeholder-slate-400 focus:ring-2 focus:ring-sky-500 transition-all">
+                        <button id="notify-btn" class="bg-gradient-to-r from-sky-500 to-indigo-600 hover:from-sky-400 hover:to-indigo-500 text-white font-bold py-3 px-6 rounded-xl shadow-lg shadow-sky-500/25 transition-transform hover:scale-105 active:scale-95 whitespace-nowrap">
+                            Notify Me
+                        </button>
+                    </div>
+                </div>
+            </div>
+
+        </main>
+
+        <!-- Footer -->
+        <footer class="mt-8 text-center text-slate-500 dark:text-slate-400 text-sm">
+            <div class="flex justify-center gap-6 mb-4 text-xl">
+                <a href="#" class="hover:text-sky-500 transition-colors"><i class="fa-brands fa-discord"></i></a>
+                <a href="#" class="hover:text-sky-500 transition-colors"><i class="fa-brands fa-twitter"></i></a>
+                <a href="#" class="hover:text-sky-500 transition-colors"><i class="fa-brands fa-instagram"></i></a>
+            </div>
+            <p>&copy; 2025 Family United All (FUA). <span id="rights">All Rights Reserved.</span></p>
+        </footer>
+
+    </div>
+
+    <!-- Scripts -->
+    <script>
+        // --- 1. Content & Localization ---
+        const content = {
+            en: {
+                subtitle: "Whiteout Survival Alliance",
+                title1: "Family",
+                title2: "All",
+                desc: "We are gathering our strength. The furnace is heating up. Prepare for the ultimate alliance experience.",
+                days: "Days",
+                hours: "Hours",
+                minutes: "Minutes",
+                seconds: "Seconds",
+                placeholder: "Enter your email for updates",
+                btn: "Notify Me",
+                rights: "All Rights Reserved."
+            },
+            ar: {
+                subtitle: "تحالف وايت آوت سرفايفل",
+                title1: "العائلة",
+                title2: "المتحدة",
+                desc: "نحن نجمع قوتنا. الفرن يشتعل. استعد لتجربة التحالف الأقوى والموقع الإلكتروني الجديد.",
+                days: "يوم",
+                hours: "ساعة",
+                minutes: "دقيقة",
+                seconds: "ثانية",
+                placeholder: "أدخل بريدك الإلكتروني للتحديثات",
+                btn: "أبلغني",
+                rights: "جميع الحقوق محفوظة."
+            }
+        };
+
+        let currentLang = 'en';
+        const langToggle = document.getElementById('lang-toggle');
+
+        function updateContent(lang) {
+            document.documentElement.lang = lang;
+            document.documentElement.dir = lang === 'ar' ? 'rtl' : 'ltr';
+            
+            // Font switching
+            if (lang === 'ar') {
+                document.body.classList.remove('font-sans');
+                document.body.classList.add('font-arabic');
+            } else {
+                document.body.classList.remove('font-arabic');
+                document.body.classList.add('font-sans');
+            }
+
+            // Text Updates
+            document.getElementById('subtitle').textContent = content[lang].subtitle;
+            document.getElementById('main-title-1').textContent = content[lang].title1;
+            document.getElementById('main-title-2').textContent = content[lang].title2;
+            document.getElementById('description').textContent = content[lang].desc;
+            document.getElementById('label-days').textContent = content[lang].days;
+            document.getElementById('label-hours').textContent = content[lang].hours;
+            document.getElementById('label-minutes').textContent = content[lang].minutes;
+            document.getElementById('label-seconds').textContent = content[lang].seconds;
+            document.getElementById('email-placeholder').placeholder = content[lang].placeholder;
+            document.getElementById('notify-btn').textContent = content[lang].btn;
+            document.getElementById('rights').textContent = content[lang].rights;
+
+            langToggle.textContent = lang === 'en' ? 'العربية' : 'English';
+        }
+
+        langToggle.addEventListener('click', () => {
+            currentLang = currentLang === 'en' ? 'ar' : 'en';
+            updateContent(currentLang);
+        });
+
+        // --- 2. Theme Handling ---
+        const themeToggle = document.getElementById('theme-toggle');
+        const themeIcon = document.getElementById('theme-icon');
+        const html = document.documentElement;
+
+        function toggleTheme() {
+            if (html.classList.contains('dark')) {
+                html.classList.remove('dark');
+                themeIcon.classList.remove('fa-sun');
+                themeIcon.classList.add('fa-moon');
+                updateParticlesColor(0x0ea5e9); // Blue for day
+            } else {
+                html.classList.add('dark');
+                themeIcon.classList.remove('fa-moon');
+                themeIcon.classList.add('fa-sun');
+                updateParticlesColor(0xffffff); // White snow for dark night
+            }
+        }
+
+        themeToggle.addEventListener('click', toggleTheme);
+
+        // --- 3. Countdown Timer ---
+        // Set date to 10 days from now for demo
+        const targetDate = new Date();
+        targetDate.setDate(targetDate.getDate() + 15); 
+
+        function updateCountdown() {
+            const now = new Date().getTime();
+            const distance = targetDate - now;
+
+            if (distance < 0) return;
+
+            const days = Math.floor(distance / (1000 * 60 * 60 * 24));
+            const hours = Math.floor((distance % (1000 * 60 * 60 * 24)) / (1000 * 60 * 60));
+            const minutes = Math.floor((distance % (1000 * 60 * 60)) / (1000 * 60));
+            const seconds = Math.floor((distance % (1000 * 60)) / 1000);
+
+            document.getElementById('days').innerText = String(days).padStart(2, '0');
+            document.getElementById('hours').innerText = String(hours).padStart(2, '0');
+            document.getElementById('minutes').innerText = String(minutes).padStart(2, '0');
+            document.getElementById('seconds').innerText = String(seconds).padStart(2, '0');
+        }
+        setInterval(updateCountdown, 1000);
+        updateCountdown();
+
+        // --- 4. Three.js Snow/Ice Effect ---
+        let scene, camera, renderer, particles, material;
+        const canvasContainer = document.getElementById('canvas-container');
+
+        function initThree() {
+            scene = new THREE.Scene();
+            camera = new THREE.PerspectiveCamera(75, window.innerWidth / window.innerHeight, 1, 1000);
+            camera.position.z = 100;
+
+            renderer = new THREE.WebGLRenderer({ alpha: true, antialias: true });
+            renderer.setSize(window.innerWidth, window.innerHeight);
+            canvasContainer.appendChild(renderer.domElement);
+
+            // Particles Geometry
+            const geometry = new THREE.BufferGeometry();
+            const count = 2000;
+            const positions = new Float32Array(count * 3);
+            const velocities = new Float32Array(count * 3);
+
+            for(let i = 0; i < count * 3; i++) {
+                positions[i] = (Math.random() - 0.5) * 600; // Spread
+                velocities[i] = (Math.random() - 0.5) * 0.2; // Speed
+            }
+
+            geometry.setAttribute('position', new THREE.BufferAttribute(positions, 3));
+            geometry.setAttribute('velocity', new THREE.BufferAttribute(velocities, 3));
+
+            // Material (Snowflakes)
+            material = new THREE.PointsMaterial({
+                size: 2,
+                color: 0xffffff,
+                transparent: true,
+                opacity: 0.8,
+                blending: THREE.AdditiveBlending
+            });
+
+            particles = new THREE.Points(geometry, material);
+            scene.add(particles);
+
+            animate();
+            
+            // Remove Loader
+            setTimeout(() => {
+                document.getElementById('loader').style.opacity = '0';
+                setTimeout(() => {
+                    document.getElementById('loader').style.display = 'none';
+                }, 500);
+            }, 1000);
+        }
+
+        function animate() {
+            requestAnimationFrame(animate);
+
+            // Rotation
+            particles.rotation.y += 0.001;
+            particles.rotation.x += 0.0005;
+
+            // Movement simulation
+            const positions = particles.geometry.attributes.position.array;
+            
+            for(let i = 1; i < positions.length; i += 3) {
+                positions[i] -= 0.2; // Fall down
+                if (positions[i] < -300) {
+                    positions[i] = 300; // Reset to top
+                }
+            }
+            particles.geometry.attributes.position.needsUpdate = true;
+
+            renderer.render(scene, camera);
+        }
+
+        function updateParticlesColor(colorHex) {
+            if(material) {
+                material.color.setHex(colorHex);
+            }
+        }
+
+        window.addEventListener('resize', () => {
+            camera.aspect = window.innerWidth / window.innerHeight;
+            camera.updateProjectionMatrix();
+            renderer.setSize(window.innerWidth, window.innerHeight);
+        });
+
+        // Initialize
+        initThree();
+
+        // Clipboard copy functionality (Optional for future use)
+        document.getElementById('notify-btn').addEventListener('click', function() {
+            const email = document.getElementById('email-placeholder').value;
+            if(email) {
+                alert(currentLang === 'en' ? 'Thanks! We will notify you soon.' : 'شكراً! سنقوم بإبلاغك قريباً.');
+            }
+        });
+
+    </script>
+</body>
+</html>
+
